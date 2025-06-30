@@ -1,13 +1,25 @@
-# EX. 2: CALCULADORA DE IMC 
+# EX. 2: CALCULADORA DE IMC
 
-BORA # Início do programa
-MONSTRO peso TASAINDODAJAULA 85.5 # Declaração de variável para o peso (com decimal); Atribuição de valor
-MONSTRO altura TASAINDODAJAULA 1.75 # Declaração de variável para a altura (com decimal); Atribuição de valor
+BORA 
+MONSTRO peso TASAINDODAJAULA 85.5 
+MONSTRO altura TASAINDODAJAULA 1.75 
 
-# Cálculo do IMC utilizando os novos tokens para parênteses
-MONSTRO altura_quadrado TASAINDODAJAULA Coloca anilha altura * altura Tira anilha # Calcula altura ao quadrado
-MONSTRO imc TASAINDODAJAULA peso / altura_quadrado # Divide o peso pela altura ao quadrado
+MONSTRO altura_quadrado TASAINDODAJAULA Coloca anilha altura * altura Tira anilha 
+MONSTRO imc Coloca anilha TASAINDODAJAULA peso / altura_quadrado  Tira anilha 
 
-GRITA "Seu IMC é: " # Imprime uma string literal
-GRITA imc # Imprime o valor da variável 'imc'
-BIRL! # Fim do programa
+GRITA Coloca anilha "Seu IMC é:",imc Tira anilha 
+GRITA Coloca anilha imc Tira anilha 
+BIRL! 
+
+
+
+
+#==============================================================
+#===================CÓDIGO EM PYTHON===========================
+#
+#peso = 85.5
+#altura = 1.75
+#altura_quadrado = (altura*altura)
+#imc = (peso / altura_quadrado)
+#print("Seu IMC é:")
+#print(imc)

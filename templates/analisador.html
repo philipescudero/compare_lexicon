@@ -456,7 +456,8 @@
                 } else {
                     resultadoCompleto.forEach(([linha, lexema, tipo]) => {
                         let classType = '';
-                        if (tipo === 'ERRO LÉXICO' || tipo === 'ERRO DE ESTRUTURA') {
+                        // AQUI ESTÁ A LINHA QUE PRECISA SER ATUALIZADA
+                        if (tipo === 'ERRO LÉXICO' || tipo === 'ERRO DE ESTRUTURA' || tipo === 'ERRO LÉXICO - ASPAS NÃO FECHADAS' || tipo === 'ERRO LÉXICO - CARACTERE INVÁLIDO' || tipo === 'Erro de Inicialização') { // Adicionei 'Erro de Inicialização'
                             classType = 'error-message'; 
                         } else if (tipo === 'COMENTARIO') { // NOVA CONDIÇÃO PARA COMENTÁRIOS
                             classType = 'comment-message';

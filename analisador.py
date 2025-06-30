@@ -3,7 +3,7 @@ import re
 TOKEN_SPEC = [
     ('INICIO_PROGRAMA', r'\bBORA\b'),
     ('FIM_PROGRAMA', r'BIRL!'),
-    ('VARIAVEL', r'\bMONSTRO\b'),
+    ('VARIAVEL_INICIA', r'\bMONSTRO\b'),
     ('ATRIBUICAO', r'\bTASAINDODAJAULA\b'),
     ('PRINT', r'\bGRITA\b'),
     ('IF', r'\bCONFERE_AI\b'),
@@ -25,35 +25,56 @@ TOKEN_SPEC = [
     ('OP_ARITMETICO', r'\+|\-|\*|\/'),
     
     # Delimitadores e Pontuação
-    # ALTERADO AQUI: Agora, PARENTESES_ABRE e FECHA são apenas as palavras-chave
-    ('PARENTESES_ABRE', r'\bColoca anilha\b'), # Apenas a palavra-chave
-    ('PARENTESES_FECHA', r'\bTira anilha\b'),   # Apenas a palavra-chave
+    ('PARENTESES_ABRE', r'\bColoca anilha\b'),
+    ('PARENTESES_FECHA', r'\bTira anilha\b'),
     ('VIRGULA', r','),
     ('DOIS_PONTOS', r':'),
 
-    # Literais
-    ('NUM_DECIMAL', r'\b\d+\.\d+\b'),
-    ('NUM', r'\b\d+\b'),
-    ('STRING', r'"[^"\n]*"'),
+    # LITERAIS - ESTES DEVEM VIR ANTES DE ID E QUALQUER ERRO GERAL
+    ('STRING', r'"[^"\n]*"'), # String bem formada (abre e fecha na mesma linha)
+    ('NUM_DECIMAL', r'\b\d+\.\d+\b'), # Números decimais (Ex: 123.45) - DEVE VIR ANTES DE NUM
+    ('NUM', r'\b\d+\b'), # Números inteiros - DEVE VIR ANTES DE ID
 
     # Comentário: Deve vir antes de ID para não confundir com palavras-chave ou IDs
     ('COMENTARIO', r'#[^\n]*'),
 
-    ('ID', r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'),
+    ('ID', r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'), # ID deve vir DEPOIS de todas as palavras-chave fixas e números.
+
+    # Erros Específicos e Ignorados (Vêm depois dos tokens válidos)
+    ('ASPAS_NAO_FECHADA', r'"[^\n]*$'), # Aspa que abre mas não fecha na mesma linha
+    ('CARACTERE_SOLTO_PARENTESES', r'[\(\)]'), # Caracteres ( e ) agora serão erros léxicos explícitos
 
     # Ignorados
     ('NEWLINE', r'\n'),
     ('SKIP', r'[ \t]+'),
 
-    # Erro
-    ('MISMATCH', r'.'), # O '.' agora capturará '(' e ')' como MISMATCH
+    # Erro Geral (O último da lista)
+    ('MISMATCH', r'.'), # Captura qualquer caractere restante como erro
 ]
 
 token_regex = re.compile('|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKEN_SPEC))
 
+# Adicionado um conjunto de palavras-chave de controle de fluxo para validação
+FLOW_CONTROL_KEYWORDS = {
+    'CONFERE_AI',
+    'CONFERE_MAIS',
+    'OU_NAO',
+    'TREINA ATÉ',
+    'FICA GRANDE',
+    'CHAMA'
+}
+# Conjunto de palavras que SÃO ID mas que poderiam ser confundidas com palavras-chave se fossem literais
+# Ex: 'If', 'Else'
+POTENTIAL_KEYWORD_MISUSE = {
+    'If', 'Else', 'While', 'For', 'Def', 'Call' # Adicione outras palavras comuns aqui
+}
+
+
 def analisar_codigo(codigo: str) -> dict:
     """
-    Realiza a análise léxica de um código-fonte BIRL e verifica a estrutura básica.
+    Realiza a análise léxica de um código-fonte BIRL e verifica a estrutura básica,
+    balanceamento de delimitadores e a obrigatoriedade de 'MONSTRO' para novas variáveis,
+    e uso incorreto de palavras-chave.
 
     Args:
         codigo (str): A string contendo o código BIRL a ser analisado.
@@ -66,61 +87,141 @@ def analisar_codigo(codigo: str) -> dict:
     linhas_codigo = codigo.splitlines()
     resultado_tokens = []
     erros_estrutura = []
+    
+    delimiters_stack = [] 
+    delimiter_map = {
+        'Tira anilha': 'PARENTESES_ABRE',
+    }
 
-    found_bora_struct = False
-    found_birl_struct = False
+    found_bora_token = False 
+    found_birl_token = False 
+    
+    declared_variables = set()
+
+    previous_meaningful_token_type = None 
+    last_meaningful_token_lexema = None 
 
     for num_linha, linha in enumerate(linhas_codigo, start=1):
         pos_coluna = 0
+        
         while pos_coluna < len(linha):
             match = token_regex.match(linha, pos_coluna)
 
             if match:
                 tipo = match.lastgroup
                 lexema = match.group(tipo)
-
+                
                 if tipo == 'SKIP' or tipo == 'NEWLINE':
-                    # Ignorar espaços em branco e novas linhas na saída
                     pass
                 elif tipo == 'COMENTARIO':
-                    # Incluir comentários na saída
                     resultado_tokens.append([num_linha, lexema, tipo])
+                    previous_meaningful_token_type = None 
+                    last_meaningful_token_lexema = None
                 elif tipo == 'MISMATCH':
                     resultado_tokens.append([num_linha, lexema, 'ERRO LÉXICO'])
+                    previous_meaningful_token_type = None 
+                    last_meaningful_token_lexema = None
+                elif tipo == 'ASPAS_NAO_FECHADA':
+                    resultado_tokens.append([num_linha, lexema, 'ERRO LÉXICO - ASPAS NÃO FECHADAS'])
+                    previous_meaningful_token_type = None 
+                    last_meaningful_token_lexema = None
+                elif tipo == 'CARACTERE_SOLTO_PARENTESES':
+                    resultado_tokens.append([num_linha, lexema, 'ERRO LÉXICO - CARACTERE INVÁLIDO'])
+                    previous_meaningful_token_type = None 
+                    last_meaningful_token_lexema = None
                 else:
-                    # Adicionar todos os outros tokens, incluindo BORA e BIRL!
                     resultado_tokens.append([num_linha, lexema, tipo])
-
-                    # Lógica para verificação de estrutura (agora separada da adição do token)
-                    if tipo == 'INICIO_PROGRAMA' and not found_bora_struct:
-                        meaningful_tokens_so_far = [t for t in resultado_tokens if t[2] not in ['SKIP', 'NEWLINE', 'COMENTARIO']]
-                        if meaningful_tokens_so_far and meaningful_tokens_so_far[0][1] == lexema:
-                            found_bora_struct = True
-                        else:
-                            erros_estrutura.append(f"Erro na linha {num_linha}: 'BORA' deve ser o primeiro comando do programa. Lexema: '{lexema}'")
-
+                    
+                    # --- Lógica de Validação MONSTRO ---
+                    if tipo == 'ID' and previous_meaningful_token_type == 'VARIAVEL_INICIA':
+                        declared_variables.add(lexema)
+                    
+                    if tipo == 'ID' and lexema not in declared_variables:
+                        temp_pos = pos_coluna + len(lexema)
+                        next_is_assignment = False
+                        while temp_pos < len(linha):
+                            next_match = token_regex.match(linha, temp_pos)
+                            if next_match:
+                                next_tipo = next_match.lastgroup
+                                if next_tipo == 'ATRIBUICAO':
+                                    next_is_assignment = True
+                                    break
+                                elif next_tipo not in ['SKIP', 'NEWLINE', 'COMENTARIO']:
+                                    break 
+                                temp_pos += len(next_match.group(next_tipo))
+                            else:
+                                break
+                        
+                        if next_is_assignment:
+                            erros_estrutura.append(f"Erro de Inicialização na linha {num_linha}: Variável '{lexema}' utilizada com atribuição ('TASAINDODAJAULA') sem declaração com 'MONSTRO'.")
+                            declared_variables.add(lexema)
+                            
+                    # --- NOVO: Lógica de Detecção de Uso Incorreto de Palavras (tipo 'If', 'Else') ---
+                    # Isso é uma validação léxica contextual simplificada.
+                    # Verifica se um ID está entre as "palavras potencialmente reservadas inválidas"
+                    # E se ele está no início de uma linha ou após um token de controle de fluxo.
+                    if tipo == 'ID' and lexema in POTENTIAL_KEYWORD_MISUSE:
+                        # Para ser mais robusto, podemos olhar o contexto na linha:
+                        # Se é o primeiro token útil da linha, ou está após um controle de fluxo
+                        # Simplificação: se está no set e é um ID, já marcamos.
+                        erros_estrutura.append(f"Erro de Palavra-Chave na linha {num_linha}: Uso incorreto da palavra '{lexema}'. Utilize as palavras-chave BIRL! para controle de fluxo (ex: CONFERE_AI, OU_NAO).")
+                    
+                    # --- Lógica de Validação BORA/BIRL! (Ajustada) ---
+                    if tipo == 'INICIO_PROGRAMA':
+                        found_bora_token = True
                     elif tipo == 'FIM_PROGRAMA':
-                        found_birl_struct = True
+                        found_birl_token = True
+
+                    # Lógica para verificação de balanceamento (usando a pilha)
+                    if tipo == 'PARENTESES_ABRE':
+                        delimiters_stack.append((lexema, num_linha, tipo))
+                    elif tipo == 'PARENTESES_FECHA':
+                        if not delimiters_stack:
+                            erros_estrutura.append(f"Erro de Balanceamento na linha {num_linha}: '{lexema}' encontrado sem delimitador de abertura correspondente.")
+                        else:
+                            last_open_delimiter_info = delimiters_stack.pop()
+                            last_open_lexema = last_open_delimiter_info[0]
+                            last_open_line = last_open_delimiter_info[1]
+                            last_open_type = last_open_delimiter_info[2]
+                            
+                            if delimiter_map.get(lexema) != last_open_type:
+                                erros_estrutura.append(f"Erro de Balanceamento na linha {num_linha}: '{lexema}' encontrado, mas esperava fechamento para '{last_open_lexema}' (linha {last_open_line}).")
+                    
+                    # Atualiza o previous_meaningful_token_type e last_meaningful_token_lexema
+                    previous_meaningful_token_type = tipo 
+                    last_meaningful_token_lexema = lexema
+
 
                 pos_coluna += len(lexema)
             else:
-                # Trata caracteres que não casam com nenhum token.
                 resultado_tokens.append([num_linha, linha[pos_coluna], 'ERRO LÉXICO'])
+                previous_meaningful_token_type = None 
+                last_meaningful_token_lexema = None
                 pos_coluna += 1
+        
+    # --- Verificações Finais de Estrutura (Pós-Processamento) ---
+    
+    # 1. Validação de BORA e BIRL! (Mais precisa agora)
+    meaningful_sequence = [
+        t for t in resultado_tokens 
+        if t[2] not in [
+            'SKIP', 'NEWLINE', 'COMENTARIO', 'ERRO LÉXICO', 
+            'ERRO LÉXICO - ASPAS NÃO FECHADAS', 'ERRO LÉXICO - CARACTERE INVÁLIDO'
+        ]
+    ]
 
-    # Verificação da estrutura final (BORA e BIRL!)
-    if not found_bora_struct:
+    if not meaningful_sequence or meaningful_sequence[0][2] != 'INICIO_PROGRAMA':
         erros_estrutura.append("Erro de Estrutura: O programa deve começar com 'BORA'.")
 
-    if not found_birl_struct:
+    if not meaningful_sequence or meaningful_sequence[-1][2] != 'FIM_PROGRAMA':
         erros_estrutura.append("Erro de Estrutura: O programa deve terminar com 'BIRL!'.")
-    elif found_birl_struct:
-        meaningful_tokens_all = [t for t in resultado_tokens if t[2] not in ['SKIP', 'NEWLINE', 'COMENTARIO', 'ERRO LÉXICO']]
-        
-        if not meaningful_tokens_all or meaningful_tokens_all[-1][1] != "BIRL!":
-            erros_estrutura.append("Erro de Estrutura: 'BIRL!' deve ser o último comando significativo do programa.")
-            
-    # Remove duplicidades nos erros de estrutura
+
+    # 2. Erros de Balanceamento de Delimitadores (qualquer coisa que sobrou na pilha)
+    while delimiters_stack:
+        unclosed_lexema, unclosed_line, _ = delimiters_stack.pop()
+        erros_estrutura.append(f"Erro de Balanceamento na linha {unclosed_line}: Delimitador '{unclosed_lexema}' aberto e não fechado.")
+
+    # Remove duplicidades nos erros de estrutura/balanceamento
     erros_estrutura = list(dict.fromkeys(erros_estrutura))
 
     return {'tokens': resultado_tokens, 'erros_estrutura': erros_estrutura}
