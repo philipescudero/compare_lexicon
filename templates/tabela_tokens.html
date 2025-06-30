@@ -1,0 +1,423 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIRL - Tabela de Tokens</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS GLOBAIS E REUSADOS DA HOME PARA CONSISTÊNCIA --- */
+        :root {
+            --primary-color: #ff6f00; /* Laranja vibrante */
+            --secondary-color: #34495e; /* Azul escuro */
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --dark-bg: rgba(0, 0, 0, 0.7); /* Para sobreposição da imagem de fundo */
+            --table-header-bg: #4a6c89; /* Azul mais claro para o cabeçalho da tabela */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            background-image: url('birl_fundo.jpg'); /* Sua imagem de fundo */
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            text-align: center;
+        }
+
+        /* Overlay para legibilidade do texto sobre a imagem de fundo */
+        body::before {
+            content: '';
+            position: fixed; /* Fixed para cobrir toda a viewport */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--dark-bg); /* Camada escura semi-transparente */
+            z-index: -1; /* Fica abaixo do conteúdo */
+        }
+
+        /* --- ESTILOS DO HEADER (REUSADO) --- */
+        header {
+            background: linear-gradient(to right, var(--primary-color), #ff9a00);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        header img {
+            height: 80px;
+            width: auto;
+            border-radius: 50%;
+            border: 3px solid white;
+            object-fit: cover;
+        }
+
+        header h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            margin: 0;
+            font-size: 3em;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        /* --- ESTILOS DA SEÇÃO PRINCIPAL DA TABELA --- */
+        .table-container {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 30px;
+        }
+
+        .content-box {
+            background-color: rgba(255, 255, 255, 0.95);
+            padding: 40px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-width: 900px;
+            width: 100%;
+            margin: 20px;
+            color: var(--text-color);
+            border-top: 5px solid var(--primary-color);
+            text-align: left; /* Alinha o texto dentro da caixa */
+        }
+
+        .content-box h2 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 2.5em;
+            color: var(--secondary-color);
+            margin-top: 0;
+            margin-bottom: 25px;
+            text-align: center;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+        }
+
+        /* --- ESTILOS DA TABELA --- */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 30px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: left;
+        }
+
+        th {
+            background-color: var(--table-header-bg);
+            color: white;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.1em;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+        }
+
+        tr:nth-child(even) { /* Linhas pares com fundo mais claro */
+            background-color: #f2f2f2;
+        }
+        tr:hover {
+            background-color: #e0e0e0;
+        }
+
+        /* --- ESTILOS DO BOTÃO VOLTAR (REUSADO) --- */
+        .back-button {
+            display: inline-block;
+            background-color: #6c757d; /* Cor cinza, neutra */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .back-button:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        /* --- ESTILOS DO FOOTER (REUSADO) --- */
+        footer {
+            background-color: var(--secondary-color);
+            color: #ecf0f1;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: auto; /* Empurra o footer para baixo */
+            font-size: 0.9em;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        /* --- RESPONSIVIDADE BÁSICA (REUSADO) --- */
+        @media (max-width: 768px) {
+            .content-box {
+                padding: 30px;
+                margin: 15px;
+            }
+            .content-box h2 {
+                font-size: 2em;
+            }
+            th, td {
+                padding: 8px;
+                font-size: 0.9em;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2.2em;
+            }
+            header p {
+                font-size: 1em;
+            }
+            header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 15px 0;
+            }
+            header img {
+                height: 60px;
+            }
+            .content-box {
+                padding: 20px;
+            }
+            .content-box h2 {
+                font-size: 1.8em;
+            }
+            th, td {
+                padding: 6px;
+                font-size: 0.8em;
+            }
+            .back-button {
+                padding: 8px 15px;
+                font-size: 0.9em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='birl_logo.png') }}" alt="Logo BIRL">
+        <div>
+            <h1>Tabela de Tokens - BIRL</h1>
+            <p>Guia completo dos elementos da linguagem</p>
+        </div>
+    </header>
+
+    <div class="table-container">
+        <div class="content-box">
+            <h2>Nossos Tokens Poderosos!</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Nome do Token</th>
+                        <th>Lexemas</th>
+                        <th>Expressão Regular</th>
+                        <th>Descrição</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>INICIO_PROGRAMA</td>
+                        <td>BORA</td>
+                        <td>`\bBORA\b`</td>
+                        <td>Início do programa</td>
+                    </tr>
+                    <tr>
+                        <td>FIM_PROGRAMA</td>
+                        <td>BIRL!</td>
+                        <td>`BIRL!`</td>
+                        <td>Fim do programa</td>
+                    </tr>
+                    <tr>
+                        <td>DECLARACAO_VAR</td>
+                        <td>MONSTRO</td>
+                        <td>`\bMONSTRO\b`</td>
+                        <td>Declaração de variável</td>
+                    </tr>
+                    <tr>
+                        <td>ATRIBUICAO</td>
+                        <td>TASAINDODAJAULA</td>
+                        <td>`\bTASAINDODAJAULA\b`</td>
+                        <td>Operador de atribuição (=)</td>
+                    </tr>
+                    <tr>
+                        <td>PRINT</td>
+                        <td>GRITA</td>
+                        <td>`\bGRITA\b`</td>
+                        <td>Imprime algo no console</td>
+                    </tr>
+                    <tr>
+                        <td>IF</td>
+                        <td>CONFERE_AI</td>
+                        <td>`\bCONFERE_AI\b`</td>
+                        <td>Início de condição IF</td>
+                    </tr>
+                    <tr>
+                        <td>ELIF</td>
+                        <td>CONFERE_MAIS</td>
+                        <td>`\bCONFERE_MAIS\b`</td>
+                        <td>Condição ELIF (else if)</td>
+                    </tr>
+                    <tr>
+                        <td>ELSE</td>
+                        <td>OU_NAO</td>
+                        <td>`\bOU_NAO\b`</td>
+                        <td>Condição ELSE</td>
+                    </tr>
+                    <tr>
+                        <td>WHILE</td>
+                        <td>TREINA ATÉ</td>
+                        <td>`\bTREINA ATÉ\b`</td>
+                        <td>Laço while</td>
+                    </tr>
+                    <tr>
+                        <td>FUNC</td>
+                        <td>FICA GRANDE</td>
+                        <td>`\bFICA GRANDE\b`</td>
+                        <td>Declaração de função</td>
+                    </tr>
+                    <tr>
+                        <td>CALL</td>
+                        <td>CHAMA</td>
+                        <td>`\bCHAMA\b`</td>
+                        <td>Chamada de função</td>
+                    </tr>
+                    <tr>
+                        <td>BOOLEAN_VERDADEIRO</td>
+                        <td>VERDADEIRO</td>
+                        <td>`\bVERDADEIRO\b`</td>
+                        <td>Valor booleano verdadeiro</td>
+                    </tr>
+                    <tr>
+                        <td>BOOLEAN_FALSO</td>
+                        <td>FALSO</td>
+                        <td>`\bFALSO\b`</td>
+                        <td>Valor booleano falso</td>
+                    </tr>
+                    <tr>
+                        <td>OP_LOGICO</td>
+                        <td>E, OU, NÃO</td>
+                        <td>`\bE\b|\bOU\b|\bNÃO\b`</td>
+                        <td>Operadores lógicos (AND, OR, NOT)</td>
+                    </tr>
+                    <tr>
+                        <td>OP_ATRIBUICAO_COMPOSTA</td>
+                        <td>+=, -=, *=, /=</td>
+                        <td>`\+=|\-=|\*=|\/\=`</td>
+                        <td>Operadores de atribuição composta</td>
+                    </tr>
+                    <tr>
+                        <td>NUM_DECIMAL</td>
+                        <td>3.14, 0.5, 123.0</td>
+                        <td>`\b\d+\.\d+\b`</td>
+                        <td>Números de ponto flutuante</td>
+                    </tr>
+                    <tr>
+                        <td>NUMERO</td>
+                        <td>10, 100, 42</td>
+                        <td>`\b[0-9]+\b`</td>
+                        <td>Números inteiros</td>
+                    </tr>
+                    <tr>
+                        <td>STRING</td>
+                        <td>"Qual foi?", "BIRL!"</td>
+                        <td>`"[^"\\n]*"`</td>
+                        <td>Texto entre aspas duplas</td>
+                    </tr>
+                    <tr>
+                        <td>OP_ARITMETICO</td>
+                        <td>+, -, *, /</td>
+                        <td>`[+\\-*/]`</td>
+                        <td>Operadores aritméticos</td>
+                    </tr>
+                    <tr>
+                        <td>OP_RELACIONAL_OU_IGUALDADE</td>
+                        <td>>=, <=, ==, !=, >, <</td>
+                        <td>`>=|<=|==|!=|>|<`</td>
+                        <td>Operadores relacionais e de igualdade</td>
+                    </tr>
+                    <tr>
+                        <td>PARENTESES_ABRE</td>
+                        <td>Coloca anilha</td>
+                        <td>`\bColoca anilha\b`</td>
+                        <td>Início de parênteses (abre um bloco ou lista de argumentos)</td>
+                    </tr>
+                    <tr>
+                        <td>PARENTESES_FECHA</td>
+                        <td>Tira anilha</td>
+                        <td>`\bTira anilha\b`</td>
+                        <td>Fim de parênteses (fecha um bloco ou lista de argumentos)</td>
+                    </tr>
+                    <tr>
+                        <td>VIRGULA</td>
+                        <td>,</td>
+                        <td>`,`</td>
+                        <td>Vírgula (separador)</td>
+                    </tr>
+                    <tr>
+                        <td>DOIS_PONTOS</td>
+                        <td>:</td>
+                        <td>`:`</td>
+                        <td>Dois pontos (início de bloco)</td>
+                    </tr>
+                    <tr>
+                        <td>COMENTARIO</td>
+                        <td># Isto é um comentário</td>
+                        <td>`#[^\n]*`</td>
+                        <td>Comentários de linha</td>
+                    </tr>
+                    <tr>
+                        <td>ID</td>
+                        <td>x, resultado, idade</td>
+                        <td>`\b[a-zA-Z_][a-zA-Z0-9_]*\b`</td>
+                        <td>Identificador (nome de variável ou função)</td>
+                    </tr>
+                    <tr>
+                        <td>NEWLINE</td>
+                        <td>(quebra de linha)</td>
+                        <td>`\n`</td>
+                        <td>Quebra de linha (ignorada na análise)</td>
+                    </tr>
+                    <tr>
+                        <td>SKIP</td>
+                        <td>(espaço, tab)</td>
+                        <td>`[ \t]+`</td>
+                        <td>Espaços em branco e tabulações (ignorados)</td>
+                    </tr>
+                    <tr>
+                        <td>MISMATCH</td>
+                        <td>@, $, #, etc.</td>
+                        <td>`.`</td>
+                        <td>Qualquer caractere não reconhecido (erro léxico)</td>
+                    </tr>
+                </tbody>
+            </table>
+            <a href="/" class="back-button">Voltar para Home</a>
+        </div>
+    </div>
+
+    <footer>
+        <p>&copy; 2025 - Analisador BIRL | Lucas Gabriel & Philip Escudero</p>
+    </footer>
+</body>
+</html>

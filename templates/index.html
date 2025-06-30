@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIRL - Home</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS GLOBAIS --- */
+        :root {
+            --primary-color: #ff6f00; /* Laranja vibrante */
+            --secondary-color: #34495e; /* Azul escuro */
+            --text-color: #333;
+            --light-bg: #f8f9fa;
+            --dark-bg: rgba(0, 0, 0, 0.7); /* Para sobreposição da imagem de fundo */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: white; /* Texto branco para contrastar com o fundo escuro */
+            background-image: url('birl_fundo.jpg'); /* Sua imagem de fundo */
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            justify-content: center; /* Centraliza verticalmente o conteúdo */
+            align-items: center; /* Centraliza horizontalmente o conteúdo */
+            text-align: center;
+        }
+
+        /* Overlay para legibilidade do texto sobre a imagem de fundo */
+        body::before {
+            content: '';
+            position: fixed; /* Fixed para cobrir toda a viewport */
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--dark-bg); /* Camada escura semi-transparente */
+            z-index: -1; /* Fica abaixo do conteúdo */
+        }
+
+        /* --- ESTILOS DO CONTEÚDO DA PÁGINA HOME --- */
+        .home-container {
+            background-color: rgba(255, 255, 255, 0.95); /* Fundo branco semi-transparente */
+            padding: 40px 60px;
+            border-radius: 15px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-width: 800px;
+            margin: 20px;
+            color: var(--text-color); /* Texto escuro dentro do container branco */
+            position: relative; /* Para z-index se necessário */
+            z-index: 1;
+        }
+
+        .home-logo {
+            height: 120px; /* Tamanho maior para a logo na Home */
+            width: auto;
+            border-radius: 50%;
+            border: 5px solid var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 4em;
+            color: var(--primary-color);
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+        }
+
+        p {
+            font-size: 1.2em;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+
+        .home-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .home-button {
+            display: inline-block;
+            background-color: var(--primary-color);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-size: 1.3em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .home-button:hover {
+            background-color: #e66200;
+            transform: translateY(-3px);
+        }
+
+        /* --- RESPONSIVIDADE BÁSICA --- */
+        @media (max-width: 768px) {
+            .home-container {
+                padding: 30px 40px;
+                margin: 15px;
+            }
+            h1 {
+                font-size: 3em;
+            }
+            p {
+                font-size: 1em;
+            }
+            .home-button {
+                padding: 12px 25px;
+                font-size: 1.1em;
+            }
+            .home-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+            .home-logo {
+                height: 100px;
+            }
+        }
+
+        @media (max-width: 480px) {
+            .home-container {
+                padding: 20px 30px;
+            }
+            h1 {
+                font-size: 2.5em;
+            }
+            .home-button {
+                width: 80%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="home-container">
+        <img src="{{ url_for('static', filename='birl_logo.png') }}" alt="Logo BIRL" class="home-logo">
+        <h1>BEM-VINDO À LINGUAGEM BIRL!</h1>
+        <p>
+            Prepare-se para entrar em forma no mundo da programação com a linguagem BIRL!  
+            Inspirada na cultura maromba brasileira, nossa linguagem torna o aprendizado  
+            de lógica e desenvolvimento mais divertido e acessível.
+        </p>
+        <p>
+            Construa algoritmos, estruturas de controle e funções com comandos temáticos  
+            e entre no shape da codificação.
+        </p>
+        <div class="home-buttons">
+            <a href="/analisador" class="home-button">IR PARA O ANALISADOR</a>
+            <a href="/tabela-tokens" class="home-button" style="background-color: #17a2b8;">TABELA DE TOKENS</a>
+            <a href="https://github.com/philipescudero/compare_lexicon/blob/main/birl_analisador.rar" target="_blank" class="home-button" style="background-color: #6c757d;">VER NO GITHUB</a>
+        </div>
+    </div>
+</body>
+</html>

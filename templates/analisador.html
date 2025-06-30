@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BIRL - Analisador Léxico</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        /* --- ESTILOS CSS REFINADOS --- */
+        :root {
+            --primary-color: #ff6f00; /* Laranja vibrante - energia */
+            --secondary-color: #34495e; /* Azul escuro - base sólida */
+            --background-light: #f8f9fa; /* Fundo claro para elementos */
+            --background-dark: #e9ecef; /* Fundo um pouco mais escuro para seções */
+            --text-color: #333;
+            --border-color: #ced4da;
+            --success-color: #28a745;
+            --danger-color: #dc3545;
+            --comment-color: #228B22; /* NOVA VARIÁVEL: VERDE ESCURO PARA COMENTÁRIOS */
+        }
+
+        body {
+            font-family: 'Roboto', sans-serif;
+            margin: 0;
+            padding: 0;
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+            
+            background-image: url('birl_fundo.jpg'); /* Caminho relativo à pasta templates */
+            background-size: cover;
+            background-position: center center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+            background-color: rgba(0, 0, 0, 0.6);
+            background-blend-mode: overlay;
+        }
+
+        header {
+            background: linear-gradient(to right, var(--primary-color), #ff9a00);
+            color: white;
+            padding: 20px 0;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+        }
+
+        header img {
+            height: 80px;
+            width: auto;
+            border-radius: 50%;
+            border: 3px solid white;
+            object-fit: cover;
+        }
+
+        header h1 {
+            font-family: 'Bebas Neue', sans-serif;
+            margin: 0;
+            font-size: 3em;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        header p {
+            margin-top: 5px;
+            font-size: 1.2em;
+        }
+
+        main {
+            flex-grow: 1;
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            padding: 30px;
+            flex-wrap: wrap;
+        }
+
+        section {
+            background-color: rgba(255, 255, 255, 0.9);
+            border-radius: 10px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.15);
+            padding: 30px;
+            flex: 1;
+            min-width: 480px;
+            display: flex;
+            flex-direction: column;
+            border-top: 5px solid var(--primary-color);
+        }
+
+        section h2 {
+            color: var(--secondary-color);
+            margin-top: 0;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+            font-family: 'Bebas Neue', sans-serif;
+            font-size: 1.8em;
+        }
+
+        .custom-file-save {
+            background-color: #007bff; /* Cor azul para destacar, similar ao "Save" em muitos UIs */
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            border: none; /* Adicionado para consistência com outros botões */
+            transition: background-color 0.3s ease, transform 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-file-save:hover {
+            background-color: #0056b3; /* Tom mais escuro ao passar o mouse */
+            transform: translateY(-2px);
+        }
+
+        .upload-section-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 1px dashed var(--border-color);
+        }
+
+        .upload-button-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .custom-file-upload {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s;
+            white-space: nowrap;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+        }
+
+        .custom-file-upload:hover {
+            background-color: #e66200;
+            transform: translateY(-2px);
+        }
+
+        #fileName {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            font-style: italic;
+            max-width: 200px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .code-editor {
+            display: flex;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            overflow: hidden;
+            height: 380px;
+            margin-bottom: 20px;
+        }
+
+        .line-numbers {
+            background-color: var(--background-dark);
+            color: #777;
+            padding: 10px 8px;
+            text-align: right;
+            font-size: 0.9em;
+            user-select: none;
+            border-right: 1px solid var(--border-color);
+            min-width: 40px;
+            overflow-y: hidden;
+            line-height: 1.553;
+            flex-shrink: 0;
+            
+            display: block;
+            white-space: pre-line;
+        }
+        .line-numbers span {
+            display: block !important;
+            padding: 0;
+            margin: 0;
+            line-height: inherit;
+        }
+
+
+        textarea {
+            flex-grow: 1;
+            border: none;
+            padding: 10px;
+            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 1em;
+            resize: none;
+            outline: none;
+            line-height: 1.4;
+            white-space: pre;
+            overflow-y: scroll;
+            background-color: #ffffff;
+            color: var(--text-color);
+            
+            background-image: none;
+            background-size: auto;
+            background-attachment: scroll;
+            background-repeat: unset;
+        }
+
+        textarea::placeholder {
+            color: #aaa;
+        }
+
+        .analyze-button {
+            background-color: var(--success-color);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 1.1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s;
+            align-self: flex-start;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        }
+
+        .analyze-button:hover {
+            background-color: #218838;
+            transform: translateY(-2px);
+        }
+
+        .output-container {
+            background-color: rgba(255, 255, 255, 0.9);
+        }
+
+        #lexer-output {
+            background-color: #f0f0f0;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            padding: 15px;
+            min-height: 380px;
+            overflow: auto;
+            font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+            font-size: 0.95em;
+            color: var(--text-color);
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+
+        /* ESTILOS PARA AS MENSAGENS DE SAÍDA */
+        .error-message {
+            color: var(--danger-color);
+            font-weight: bold;
+        }
+
+        .comment-message { /* NOVA CLASSE PARA COMENTÁRIOS */
+            color: var(--comment-color); /* Aplica a nova cor */
+            font-style: italic; /* Opcional: para comentários ficarem em itálico */
+        }
+
+
+        footer {
+            background-color: var(--secondary-color);
+            color: #ecf0f1;
+            text-align: center;
+            padding: 15px 0;
+            margin-top: 30px;
+            font-size: 0.9em;
+            box-shadow: 0 -4px 10px rgba(0, 0, 0, 0.2);
+        }
+
+        .back-button {
+            display: inline-block;
+            background-color: #6c757d;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-size: 1em;
+            font-weight: bold;
+            transition: background-color 0.3s ease, transform 0.2s;
+            margin-top: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        }
+
+        .back-button:hover {
+            background-color: #5a6268;
+            transform: translateY(-2px);
+        }
+
+        @media (max-width: 1024px) {
+            main {
+                flex-direction: column;
+                align-items: center;
+                padding: 20px;
+            }
+            section {
+                min-width: unset;
+                width: 100%;
+                margin-bottom: 20px;
+            }
+        }
+
+        @media (max-width: 600px) {
+            header h1 {
+                font-size: 2.2em;
+            }
+            header p {
+                font-size: 1em;
+            }
+            header {
+                flex-direction: column;
+                gap: 10px;
+                padding: 15px 0;
+            }
+            header img {
+                height: 60px;
+            }
+            section {
+                padding: 15px;
+            }
+            section h2 {
+                font-size: 1.5em;
+                margin-bottom: 15px;
+            }
+            .custom-file-upload {
+                padding: 8px 12px;
+                font-size: 0.9em;
+            }
+            #fileName {
+                max-width: 150px;
+            }
+            .analyze-button {
+                padding: 10px 20px;
+                font-size: 1em;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <img src="{{ url_for('static', filename='birl_logo.png') }}" alt="Logo BIRL">
+        <div>
+            <h1>Analisador Léxico</h1>
+            <p>Sinta a força do código com a linguagem do shape!</p>
+        </div>
+    </header>
+
+    <main>
+        <section class="code-editor-container">
+            <div class="upload-section-top">
+                <h2>Código BIRL!</h2>
+                <div class="upload-button-container">
+                    <label for="uploadFile" class="custom-file-upload">Carregar Arquivo .py</label>
+                    <input type="file" id="uploadFile" accept=".py" style="display: none;" />
+                    <span id="fileName">Nenhum arquivo selecionado</span>
+                    <button class="custom-file-save" onclick="salvarCodigo()">Salvar Código .birl</button>
+                </div>
+            </div>
+            <div class="code-editor">
+                <div class="line-numbers" id="linhas"></div>
+                <textarea id="codigo" placeholder="Digite seu código BIRL aqui..." oninput="atualizarLinhas()" onscroll="sincronizarScroll()"></textarea>
+            </div>
+            <button class="analyze-button" onclick="analisar()">ANALISAR CÓDIGO!</button>
+            
+            <a href="/" class="back-button">Voltar para Home</a>
+        </section>
+
+        <section class="output-container">
+            <h2>Saída do Analisador Léxico</h2>
+            <pre id="resultado"></pre>
+        </section>
+    </main>
+
+    <footer>
+        <p>&copy; 2025 - Analisador BIRL | Lucas Gabriel & Philip Escudero</p>
+    </footer>
+
+    <script>
+        /* --- SCRIPTS JAVASCRIPT --- */
+        const uploadFile = document.getElementById('uploadFile');
+        const codigoTextarea = document.getElementById('codigo');
+        const linhasDiv = document.querySelector('.line-numbers');
+        const resultadoDiv = document.getElementById('resultado');
+        const fileNameSpan = document.getElementById('fileName');
+
+        uploadFile.addEventListener('change', function() {
+            const file = this.files[0];
+            if (!file) {
+                fileNameSpan.textContent = 'Nenhum arquivo selecionado';
+                return;
+            }
+
+            fileNameSpan.textContent = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                codigoTextarea.value = e.target.result;
+                atualizarLinhas();
+                codigoTextarea.scrollTop = 0;
+            };
+            reader.onerror = function() {
+                fileNameSpan.textContent = 'Erro ao carregar arquivo';
+                console.error("Erro ao ler o arquivo:", reader.error);
+            };
+            reader.readAsText(file);
+        });
+
+        function atualizarLinhas() {
+            const lines = codigoTextarea.value.split('\n');
+            let output = '';
+            // Itera sobre as linhas do código. Se o código estiver vazio, ainda mostra "1"
+            const numLinesToShow = Math.max(lines.length, 1); 
+
+            for (let i = 1; i <= numLinesToShow; i++) {
+                output += `<span>${i}</span>`; 
+            }
+            linhasDiv.innerHTML = output;
+        }
+
+        function sincronizarScroll() {
+            linhasDiv.scrollTop = codigoTextarea.scrollTop;
+        }
+
+        async function analisar() {
+            const codigoParaAnalisar = codigoTextarea.value;
+            resultadoDiv.innerText = 'Analisando...';
+
+            try {
+                const resposta = await fetch('/analisar', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ codigo: codigoParaAnalisar })
+                });
+
+                if (!resposta.ok) {
+                    const errorText = await resposta.text();
+                    throw new Error(`Erro do servidor: ${resposta.status} - ${errorText}`);
+                }
+
+                const resultadoCompleto = await resposta.json(); 
+
+                let output = '';
+                if (resultadoCompleto.length === 0 && codigoParaAnalisar.trim() === "") {
+                    output = "Nenhum código para analisar.";
+                } else if (resultadoCompleto.length === 0) {
+                    output = "Nenhum token válido encontrado, verifique por erros léxicos.";
+                } else {
+                    resultadoCompleto.forEach(([linha, lexema, tipo]) => {
+                        let classType = '';
+                        if (tipo === 'ERRO LÉXICO' || tipo === 'ERRO DE ESTRUTURA') {
+                            classType = 'error-message'; 
+                        } else if (tipo === 'COMENTARIO') { // NOVA CONDIÇÃO PARA COMENTÁRIOS
+                            classType = 'comment-message';
+                        }
+                        output += `<span class="${classType}">Linha ${linha !== 0 ? linha : 'N/A'}: "${lexema}" => ${tipo}</span>\n`;
+                    });
+                }
+                resultadoDiv.innerHTML = output;
+
+            } catch (error) {
+                resultadoDiv.innerHTML = `<span class="error-message">Ocorreu um erro na comunicação: ${error.message}</span>`;
+                console.error("Erro ao analisar código:", error);
+            }
+        }
+
+        function salvarCodigo() {
+            const codigoParaSalvar = codigoTextarea.value;
+            const nomeDoArquivo = "meu_codigo_birl.py"; 
+
+            const blob = new Blob([codigoParaSalvar], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = nomeDoArquivo;
+
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        document.addEventListener('DOMContentLoaded', () => {
+            codigoTextarea.value = `#Exemplo de Código - BIRL! Language
+            
+BORA
+MONSTRO idade TASAINDODAJAULA 17
+CONFERE_AI idade >= 18
+    GRITA "Pode entrar na academia!"
+OU_NAO
+    GRITA "Vai fazer alongamento primeiro!"
+BIRL!
+`;
+            atualizarLinhas();
+        });
+    </script>
+</body>
+</html>
