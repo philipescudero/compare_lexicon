@@ -14,7 +14,7 @@
             --background-dark: #e9ecef; /* Fundo um pouco mais escuro para seções */
             --text-color: #333;
             --border-color: #ced4da;
-            --success-color: #28a745;
+            --success-color: #28a745; /* Verde para sucesso, usaremos para o botão */
             --danger-color: #dc3545;
             --comment-color: #228B22; /* NOVA VARIÁVEL: VERDE ESCURO PARA COMENTÁRIOS */
             --syntax-success-color: #007bff; /* Azul para sucesso sintático */
@@ -135,21 +135,21 @@
             gap: 15px;
         }
 
-        .custom-file-upload {
-            background-color: var(--primary-color);
+        .upload-button { /* Estilo para o novo botão de upload */
+            background-color: var(--success-color); /* Verde */
             color: white;
-            padding: 10px 20px;
+            padding: 10px 15px;
+            border: none;
             border-radius: 5px;
             cursor: pointer;
-            font-weight: bold;
+            font-size: 0.9em;
             transition: background-color 0.3s ease, transform 0.2s;
-            white-space: nowrap;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
 
-        .custom-file-upload:hover {
-            background-color: #e66200;
-            transform: translateY(-2px);
+        .upload-button:hover {
+            background-color: #218838; /* Verde mais escuro ao passar o mouse */
+            transform: translateY(-1px);
         }
 
         #fileName {
@@ -162,7 +162,7 @@
             white-space: nowrap;
         }
         
-        /* Novo estilo para o contador de linha/coluna */
+        /* Estilo para o contador de linha/coluna */
         #cursorPosition {
             font-size: 0.9em;
             color: var(--secondary-color);
@@ -266,41 +266,65 @@
             word-break: break-all;
         }
 
-        /* ESTILOS PARA AS MENSAGENS DE SAÍDA (AJUSTADOS PARA MENOS ESPAÇO) */
+        /* ESTILOS PARA AS MENSAGENS DE SAÍDA (AJUSTES MAIS AGRESSIVOS) */
         .output-row {
             display: flex;
             width: 100%;
-            /* Remover ou diminuir muito o margin-bottom aqui */
-            margin-bottom: 0; /* Espaçamento entre as linhas para 0px */
-            /* line-height ajustado para ser mais agressivo */
-            line-height: 1em; /* Reduzindo a altura da linha para todo o row */
+            margin: 0; 
+            padding: 0; 
+            min-height: 1.2em; 
+            height: auto; 
+            align-items: flex-start; 
+            overflow: visible; 
+            box-sizing: border-box; 
         }
 
         .output-line,
         .output-col,
         .output-lexeme,
         .output-type {
-            padding: 0px 4px; /* Reduzindo o padding vertical para 0 */
-            /* line-height ajustado para ser mais agressivo */
-            line-height: 1.1; /* Tighter line height for text within cells */
-            font-size: 0.88em; /* Diminuindo um pouco a fonte para mais compactação */
+            padding: 2px 4px; 
+            line-height: 1.2; 
+            font-size: 0.85em; 
             border-right: 1px solid #ddd;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            overflow: hidden; 
+            text-overflow: ellipsis; 
             box-sizing: border-box;
+            margin: 0; 
+            vertical-align: top; 
         }
 
-        /* Larguras das colunas */
+        .output-lexeme {
+            flex: 2;
+            white-space: pre-wrap; 
+            word-break: break-word; 
+            text-overflow: clip; 
+            overflow: visible; 
+        }
+
+        /* Larguras das colunas (mantidas) */
         .output-line { flex: 0 0 40px; text-align: right; }
         .output-col  { flex: 0 0 40px; text-align: right; }
-        .output-lexeme { flex: 2; }
         .output-type { flex: 1; border-right: none; }
 
         .output-header {
             font-weight: bold;
             background-color: #e0e0e0;
             border-bottom: 1px solid #ccc;
+            height: auto; 
+            min-height: unset; 
+            line-height: normal; 
+        }
+        .output-header .output-line,
+        .output-header .output-col,
+        .output-header .output-lexeme,
+        .output-header .output-type {
+            padding-top: 2px; 
+            padding-bottom: 2px;
+            line-height: normal; 
+            font-size: 0.95em; 
+            white-space: nowrap; 
+            text-overflow: ellipsis; 
         }
 
 
@@ -385,7 +409,7 @@
                 font-size: 1.5em;
                 margin-bottom: 15px;
             }
-            .custom-file-upload {
+            .upload-button {
                 padding: 8px 12px;
                 font-size: 0.9em;
             }
@@ -413,12 +437,16 @@
             <div class="upload-section-top">
                 <h2>Código BIRL!</h2>
                 <div class="upload-button-container">
-                    <label for="uploadFile" class="custom-file-upload">Carregar Arquivo .py</label>
-                    <input type="file" id="uploadFile" accept=".py" style="display: none;" />
+                    <button class="upload-button" onclick="document.getElementById('uploadFile').click();">Carregar Arquivo .py</button>
+                    <input type="file" id="uploadFile" accept=".py" style="display: none;" onchange="handleFileUpload(this.files)" />
                     <span id="fileName">Nenhum arquivo selecionado</span>
-                    <span id="cursorPosition">Linha 1, Coluna 1</span> <button class="custom-file-save" onclick="salvarCodigo()">Salvar Código .birl</button>
+                    <button class="custom-file-save" onclick="salvarCodigo()">Salvar Código .birl</button>
+                </div>
+                <div style="width: 100%; text-align: right; margin-top: -10px; margin-bottom: 5px;">
+                    <span id="cursorPosition">Linha 1, Coluna 1</span>
                 </div>
             </div>
+            
             <div class="code-editor">
                 <div class="line-numbers" id="linhas"></div>
                 <textarea id="codigo" placeholder="Digite seu código BIRL aqui..." oninput="atualizarLinhas(); atualizarPosicaoCursor();" onscroll="sincronizarScroll()"></textarea>
@@ -442,38 +470,31 @@
         /* --- SCRIPTS JAVASCRIPT --- */
         const uploadFile = document.getElementById('uploadFile');
         const codigoTextarea = document.getElementById('codigo');
-        const linhasDiv = document.querySelector('.line-numbers');
+        const linhasDiv = document.getElementById('linhas'); 
         const resultadoDiv = document.getElementById('resultado');
         const fileNameSpan = document.getElementById('fileName');
-        const cursorPositionSpan = document.getElementById('cursorPosition'); // NOVO: Referência ao span do cursor
+        const cursorPositionSpan = document.getElementById('cursorPosition'); 
 
-        // Adiciona um listener para a tecla TAB na textarea
         codigoTextarea.addEventListener('keydown', function(event) {
             if (event.key === 'Tab') {
-                event.preventDefault(); // Impede o comportamento padrão do Tab (pular para próximo elemento)
+                event.preventDefault(); 
                 const start = this.selectionStart;
                 const end = this.selectionEnd;
 
-                // Insere 4 espaços (ou '\t' para tab real) no local do cursor
                 this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
                 
-                // Reposiciona o cursor após a inserção
                 this.selectionStart = this.selectionEnd = start + 4;
 
-                atualizarLinhas(); // Atualiza a numeração de linhas
-                atualizarPosicaoCursor(); // Atualiza a posição do cursor
+                atualizarLinhas(); 
+                atualizarPosicaoCursor(); 
             }
-            // Para identação automática ao pressionar Enter, seria mais complexo aqui,
-            // precisaria analisar a linha anterior para copiar a indentação.
         });
 
-        // NOVO: Adiciona listeners para atualizar a posição do cursor ao digitar ou clicar
         codigoTextarea.addEventListener('keyup', atualizarPosicaoCursor);
         codigoTextarea.addEventListener('click', atualizarPosicaoCursor);
 
-
-        uploadFile.addEventListener('change', function() {
-            const file = this.files[0];
+        function handleFileUpload(files) {
+            const file = files && files[0];
             if (!file) {
                 fileNameSpan.textContent = 'Nenhum arquivo selecionado';
                 return;
@@ -485,20 +506,20 @@
             reader.onload = function(e) {
                 codigoTextarea.value = e.target.result;
                 atualizarLinhas();
-                atualizarPosicaoCursor(); // Atualiza a posição após carregar arquivo
+                atualizarPosicaoCursor(); 
                 codigoTextarea.scrollTop = 0;
+                sincronizarScroll(); 
             };
             reader.onerror = function() {
                 fileNameSpan.textContent = 'Erro ao carregar arquivo';
                 console.error("Erro ao ler o arquivo:", reader.error);
             };
             reader.readAsText(file);
-        });
+        }
 
         function atualizarLinhas() {
             const lines = codigoTextarea.value.split('\n');
             let output = '';
-            // Itera sobre as linhas do código. Se o código estiver vazio, ainda mostra "1"
             const numLinesToShow = Math.max(lines.length, 1); 
 
             for (let i = 1; i <= numLinesToShow; i++) {
@@ -511,17 +532,14 @@
             linhasDiv.scrollTop = codigoTextarea.scrollTop;
         }
         
-        // NOVO: Função para atualizar a linha e coluna do cursor
         function atualizarPosicaoCursor() {
             const text = codigoTextarea.value;
             const cursorPosition = codigoTextarea.selectionStart;
 
-            // Encontra a linha atual
             const lines = text.substring(0, cursorPosition).split('\n');
             const currentLine = lines.length;
 
-            // Encontra a coluna atual
-            const currentColumn = lines[lines.length - 1].length + 1; // +1 porque colunas são 1-indexed
+            const currentColumn = lines[lines.length - 1].length + 1; 
 
             cursorPositionSpan.textContent = `Linha ${currentLine}, Coluna ${currentColumn}`;
         }
@@ -529,7 +547,7 @@
 
         async function analisar() {
             const codigoParaAnalisar = codigoTextarea.value;
-            resultadoDiv.innerText = 'Analisando...'; // Limpa a saída anterior
+            resultadoDiv.innerText = 'Analisando...'; 
 
             try {
                 const resposta = await fetch('/analisar', {
@@ -543,7 +561,7 @@
                     throw new Error(`Erro do servidor: ${resposta.status} - ${errorText}`);
                 }
 
-                const resultados = await resposta.json(); // Recebe a lista de objetos estruturados
+                const resultados = await resposta.json(); 
 
                 let outputHtml = '';
 
@@ -563,9 +581,8 @@
                 } else if (resultados.length === 0) {
                     outputHtml += `<div class="output-row"><div class="output-lexeme">Nenhum token válido encontrado, verifique por erros léxicos.</div></div>`;
                 } else {
-                    resultados.forEach(item => { // Itera sobre cada objeto na lista
+                    resultados.forEach(item => { 
                         let classType = '';
-                        // Determina a classe CSS com base na categoria ou tipo
                         if (item.categoria === 'erro') {
                             classType = 'error-message';
                         } else if (item.tipo === 'COMENTARIO') {
@@ -574,7 +591,6 @@
                             classType = 'syntax-success-message';
                         }
                         
-                        // Renderiza a linha usando as colunas
                         outputHtml += `
                             <div class="output-row ${classType}">
                                 <div class="output-line">${item.linha !== 0 ? item.linha : 'N/A'}</div>
@@ -621,7 +637,8 @@ OU_NAO:
 BIRL!
 `;
             atualizarLinhas();
-            atualizarPosicaoCursor(); // NOVO: Atualiza a posição do cursor ao carregar a página
+            atualizarPosicaoCursor(); 
+            sincronizarScroll(); 
         });
     </script>
 </body>
