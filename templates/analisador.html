@@ -161,6 +161,16 @@
             text-overflow: ellipsis;
             white-space: nowrap;
         }
+        
+        /* Novo estilo para o contador de linha/coluna */
+        #cursorPosition {
+            font-size: 0.9em;
+            color: var(--secondary-color);
+            font-style: italic;
+            margin-left: 15px;
+            white-space: nowrap;
+        }
+
 
         .code-editor {
             display: flex;
@@ -256,7 +266,44 @@
             word-break: break-all;
         }
 
-        /* ESTILOS PARA AS MENSAGENS DE SAÍDA */
+        /* ESTILOS PARA AS MENSAGENS DE SAÍDA (AJUSTADOS PARA MENOS ESPAÇO) */
+        .output-row {
+            display: flex;
+            width: 100%;
+            /* Remover ou diminuir muito o margin-bottom aqui */
+            margin-bottom: 0; /* Espaçamento entre as linhas para 0px */
+            /* line-height ajustado para ser mais agressivo */
+            line-height: 1em; /* Reduzindo a altura da linha para todo o row */
+        }
+
+        .output-line,
+        .output-col,
+        .output-lexeme,
+        .output-type {
+            padding: 0px 4px; /* Reduzindo o padding vertical para 0 */
+            /* line-height ajustado para ser mais agressivo */
+            line-height: 1.1; /* Tighter line height for text within cells */
+            font-size: 0.88em; /* Diminuindo um pouco a fonte para mais compactação */
+            border-right: 1px solid #ddd;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            box-sizing: border-box;
+        }
+
+        /* Larguras das colunas */
+        .output-line { flex: 0 0 40px; text-align: right; }
+        .output-col  { flex: 0 0 40px; text-align: right; }
+        .output-lexeme { flex: 2; }
+        .output-type { flex: 1; border-right: none; }
+
+        .output-header {
+            font-weight: bold;
+            background-color: #e0e0e0;
+            border-bottom: 1px solid #ccc;
+        }
+
+
         .error-message {
             color: var(--danger-color);
             font-weight: bold;
@@ -369,12 +416,12 @@
                     <label for="uploadFile" class="custom-file-upload">Carregar Arquivo .py</label>
                     <input type="file" id="uploadFile" accept=".py" style="display: none;" />
                     <span id="fileName">Nenhum arquivo selecionado</span>
-                    <button class="custom-file-save" onclick="salvarCodigo()">Salvar Código .birl</button>
+                    <span id="cursorPosition">Linha 1, Coluna 1</span> <button class="custom-file-save" onclick="salvarCodigo()">Salvar Código .birl</button>
                 </div>
             </div>
             <div class="code-editor">
                 <div class="line-numbers" id="linhas"></div>
-                <textarea id="codigo" placeholder="Digite seu código BIRL aqui..." oninput="atualizarLinhas()" onscroll="sincronizarScroll()"></textarea>
+                <textarea id="codigo" placeholder="Digite seu código BIRL aqui..." oninput="atualizarLinhas(); atualizarPosicaoCursor();" onscroll="sincronizarScroll()"></textarea>
             </div>
             <button class="analyze-button" onclick="analisar()">ANALISAR CÓDIGO!</button>
             
@@ -398,6 +445,32 @@
         const linhasDiv = document.querySelector('.line-numbers');
         const resultadoDiv = document.getElementById('resultado');
         const fileNameSpan = document.getElementById('fileName');
+        const cursorPositionSpan = document.getElementById('cursorPosition'); // NOVO: Referência ao span do cursor
+
+        // Adiciona um listener para a tecla TAB na textarea
+        codigoTextarea.addEventListener('keydown', function(event) {
+            if (event.key === 'Tab') {
+                event.preventDefault(); // Impede o comportamento padrão do Tab (pular para próximo elemento)
+                const start = this.selectionStart;
+                const end = this.selectionEnd;
+
+                // Insere 4 espaços (ou '\t' para tab real) no local do cursor
+                this.value = this.value.substring(0, start) + "    " + this.value.substring(end);
+                
+                // Reposiciona o cursor após a inserção
+                this.selectionStart = this.selectionEnd = start + 4;
+
+                atualizarLinhas(); // Atualiza a numeração de linhas
+                atualizarPosicaoCursor(); // Atualiza a posição do cursor
+            }
+            // Para identação automática ao pressionar Enter, seria mais complexo aqui,
+            // precisaria analisar a linha anterior para copiar a indentação.
+        });
+
+        // NOVO: Adiciona listeners para atualizar a posição do cursor ao digitar ou clicar
+        codigoTextarea.addEventListener('keyup', atualizarPosicaoCursor);
+        codigoTextarea.addEventListener('click', atualizarPosicaoCursor);
+
 
         uploadFile.addEventListener('change', function() {
             const file = this.files[0];
@@ -412,6 +485,7 @@
             reader.onload = function(e) {
                 codigoTextarea.value = e.target.result;
                 atualizarLinhas();
+                atualizarPosicaoCursor(); // Atualiza a posição após carregar arquivo
                 codigoTextarea.scrollTop = 0;
             };
             reader.onerror = function() {
@@ -436,10 +510,26 @@
         function sincronizarScroll() {
             linhasDiv.scrollTop = codigoTextarea.scrollTop;
         }
+        
+        // NOVO: Função para atualizar a linha e coluna do cursor
+        function atualizarPosicaoCursor() {
+            const text = codigoTextarea.value;
+            const cursorPosition = codigoTextarea.selectionStart;
+
+            // Encontra a linha atual
+            const lines = text.substring(0, cursorPosition).split('\n');
+            const currentLine = lines.length;
+
+            // Encontra a coluna atual
+            const currentColumn = lines[lines.length - 1].length + 1; // +1 porque colunas são 1-indexed
+
+            cursorPositionSpan.textContent = `Linha ${currentLine}, Coluna ${currentColumn}`;
+        }
+
 
         async function analisar() {
             const codigoParaAnalisar = codigoTextarea.value;
-            resultadoDiv.innerText = 'Analisando...';
+            resultadoDiv.innerText = 'Analisando...'; // Limpa a saída anterior
 
             try {
                 const resposta = await fetch('/analisar', {
@@ -453,26 +543,49 @@
                     throw new Error(`Erro do servidor: ${resposta.status} - ${errorText}`);
                 }
 
-                const resultadoCompleto = await resposta.json(); 
+                const resultados = await resposta.json(); // Recebe a lista de objetos estruturados
 
-                let output = '';
-                if (resultadoCompleto.length === 0 && codigoParaAnalisar.trim() === "") {
-                    output = "Nenhum código para analisar.";
-                } else if (resultadoCompleto.length === 0) {
-                    output = "Nenhum token válido encontrado, verifique por erros léxicos.";
+                let outputHtml = '';
+
+                // Cabeçalho das Colunas
+                outputHtml += `
+                    <div class="output-row output-header">
+                        <div class="output-line">Linha</div>
+                        <div class="output-col">Coluna</div>
+                        <div class="output-lexeme">Lexema / Mensagem</div>
+                        <div class="output-type">Tipo</div>
+                    </div>
+                `;
+
+
+                if (resultados.length === 0 && codigoParaAnalisar.trim() === "") {
+                    outputHtml += `<div class="output-row"><div class="output-lexeme">Nenhum código para analisar.</div></div>`;
+                } else if (resultados.length === 0) {
+                    outputHtml += `<div class="output-row"><div class="output-lexeme">Nenhum token válido encontrado, verifique por erros léxicos.</div></div>`;
                 } else {
-                    resultadoCompleto.forEach(([linha, lexema, tipo]) => {
+                    resultados.forEach(item => { // Itera sobre cada objeto na lista
                         let classType = '';
-                        // AQUI ESTÁ A LINHA QUE PRECISA SER ATUALIZADA
-                        if (tipo === 'ERRO LÉXICO' || tipo === 'ERRO DE ESTRUTURA' || tipo === 'ERRO LÉXICO - ASPAS NÃO FECHADAS' || tipo === 'ERRO LÉXICO - CARACTERE INVÁLIDO' || tipo === 'Erro de Inicialização') { // Adicionei 'Erro de Inicialização'
-                            classType = 'error-message'; 
-                        } else if (tipo === 'COMENTARIO') { // NOVA CONDIÇÃO PARA COMENTÁRIOS
+                        // Determina a classe CSS com base na categoria ou tipo
+                        if (item.categoria === 'erro') {
+                            classType = 'error-message';
+                        } else if (item.tipo === 'COMENTARIO') {
                             classType = 'comment-message';
+                        } else if (item.tipo === 'SUCESSO SINTÁTICO') {
+                            classType = 'syntax-success-message';
                         }
-                        output += `<span class="${classType}">Linha ${linha !== 0 ? linha : 'N/A'}: "${lexema}" => ${tipo}</span>\n`;
+                        
+                        // Renderiza a linha usando as colunas
+                        outputHtml += `
+                            <div class="output-row ${classType}">
+                                <div class="output-line">${item.linha !== 0 ? item.linha : 'N/A'}</div>
+                                <div class="output-col">${item.coluna !== 0 ? item.coluna : 'N/A'}</div>
+                                <div class="output-lexeme">${item.lexema_ou_mensagem}</div>
+                                <div class="output-type">${item.tipo}</div>
+                            </div>
+                        `;
                     });
                 }
-                resultadoDiv.innerHTML = output;
+                resultadoDiv.innerHTML = outputHtml;
 
             } catch (error) {
                 resultadoDiv.innerHTML = `<span class="error-message">Ocorreu um erro na comunicação: ${error.message}</span>`;
@@ -501,13 +614,14 @@
             
 BORA
 MONSTRO idade TASAINDODAJAULA 17
-CONFERE_AI idade >= 18
-    GRITA "Pode entrar na academia!"
-OU_NAO
-    GRITA "Vai fazer alongamento primeiro!"
+CONFERE_AI idade >= 18:
+    GRITA Coloca anilha "Pode entrar na academia!" Tira anilha
+OU_NAO:
+    GRITA Coloca anilha "Vai fazer alongamento primeiro!" Tira anilha
 BIRL!
 `;
             atualizarLinhas();
+            atualizarPosicaoCursor(); // NOVO: Atualiza a posição do cursor ao carregar a página
         });
     </script>
 </body>
