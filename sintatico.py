@@ -18,43 +18,40 @@ class Parser:
         return self.current_token()
 
     def add_error(self, message, line=None):
-        # Lógica aprimorada para obter a linha do erro, garantindo que não seja "N/A" se houver token
-        error_line = line # Prioriza a linha passada como argumento
-        if error_line is None: # Se a linha não foi explicitamente passada
-            if self.current_token(): # Se há um token atual, usa a linha dele
+  
+        error_line = line 
+        if error_line is None: 
+            if self.current_token(): 
                 error_line = self.current_token()[0]
-            elif self.tokens: # Se não há token atual, mas há tokens no geral, usa a linha do ÚLTIMO token processado
+            elif self.tokens: 
                 error_line = self.tokens[-1][0]
-            else: # Caso não haja tokens em absoluto (arquivo vazio, etc.)
+            else: 
                 error_line = "N/A"
 
-        # Armazena o erro como uma tupla (linha, mensagem_limpa_do_erro)
+        
         error_entry = (error_line, message)
         
-        # Evita adicionar mensagens de erro idênticas consecutivas, para evitar poluição da saída.
+        
         if not self.errors or self.errors[-1] != error_entry:
             self.errors.append(error_entry)
 
     def match(self, expected_type):
-        # Tenta "casar" (consumir) o token atual com o tipo esperado.
-        # Se casar, avança para o próximo token e retorna True.
-        # Se não, adiciona um erro sintático e retorna False.
+   
         token = self.current_token()
-        if token and token[2] == expected_type: # token[2] é o TIPO do token
+        if token and token[2] == expected_type:
             self.advance()
             return True
         
-        # Erro: token esperado não encontrado. Passa a linha do token *inesperado* para add_error.
+       
         if token:
             self.add_error(f"Token inesperado '{token[1]}'. Esperava '{expected_type}'.", token[0]) # Passa a linha do token real
         else:
             self.add_error(f"Fim de arquivo inesperado. Esperava '{expected_type}'.") # add_error vai pegar a linha "N/A" ou do último token
         return False
 
-    # --- Funções para cada regra gramatical da BIRL! (Parser Recursivo Descendente) ---
 
     def parse_program(self):
-        # Regra: <Programa> ::= BORA <ListaComandos> BIRL!
+        
         if self.match('INICIO_PROGRAMA'): # Espera o token 'BORA'
             self.parse_command_list() # Tenta analisar a lista de comandos
             if not self.match('FIM_PROGRAMA'): # Espera o token 'BIRL!'
@@ -68,16 +65,14 @@ class Parser:
 
 
     def parse_command_list(self):
-        # Regra: <ListaComandos> ::= <Comando> <ListaComandos> | ε (epsilon - opcional/vazio)
-        # Continua a processar comandos enquanto houver tokens e não for um "token de parada" (fim de programa/bloco).
+       
         stop_tokens = ['FIM_PROGRAMA', 'ELIF', 'ELSE', 'PARENTESES_FECHA'] 
 
         while self.current_token() and self.current_token()[2] not in stop_tokens:
             start_index_before_command = self.current_token_index # Guarda a posição para detectar se o parser avançou
 
-            if not self.parse_command(): # Tenta parsear um único comando
-                # Se parse_command() falhou (retornou False) e o parser não conseguiu consumir o token,
-                # significa que ele está preso ou o token é inesperado.
+            if not self.parse_command(): 
+               
                 if self.current_token_index == start_index_before_command and self.current_token():
                     # Adiciona um erro genérico para o comando não processado e força o avanço
                     self.add_error(f"Erro: Não foi possível processar o comando '{self.current_token()[1]}'. Tentando sincronizar.", self.current_token()[0])
@@ -157,7 +152,7 @@ class Parser:
 
 
     def parse_expression_list(self):
-        # Regra: <ListaExpressoes> ::= <Expressao> | <Expressao> VIRGULA <ListaExpressoes>
+        
         if not self.parse_expression(): # Espera a primeira expressão
             # Erro já é adicionado em parse_expression(). Aqui, apenas indicamos que falhou.
             return False
@@ -174,7 +169,7 @@ class Parser:
         if not self.parse_term(): # Uma expressão deve começar com um termo
             return False
         
-        # Loop para encadear múltiplas operações na mesma expressão
+        
         while self.current_token() and \
               self.current_token()[2] in ['OP_ARITMETICO', 'OP_LOGICO', 'OP_RELACIONAL_OU_IGUALDADE']:
             self.advance() # Consome o operador
@@ -182,11 +177,7 @@ class Parser:
                 self.add_error(f"Expressão incompleta. Esperava um termo após o operador '{self.tokens[self.current_token_index-1][1]}'.", self.current_token()[0] if self.current_token() else "N/A")
                 return False 
         
-        # Verificação de erro de operador ausente / termo inesperado
-        # Esta lógica só é acionada SE A EXPRESSÃO NÃO TERMINOU COM UM OPERADOR E TERM.
-        # Se o token atual NÃO É um dos DELIMITADORES que indicam o FIM da expressão,
-        # E TAMBÉM NÃO É um operador para continuar a expressão (já tratado no loop acima),
-        # então é um erro.
+    
         EXPRESSION_END_DELIMITERS = [
             'DOIS_PONTOS',       # Fim de condição IF/WHILE/FUNC
             'PARENTESES_FECHA',  # Fim de (expressão) ou (arg1, arg2)
@@ -204,9 +195,7 @@ class Parser:
             None                 # Fim do arquivo (EOF)
         ]
         
-        # Se após o processamento da expressão, o token atual NÃO está na lista de finalizadores,
-        # e também não é um operador (que já teria sido consumido pelo loop acima),
-        # então é um erro.
+     
         if self.current_token() and \
            self.current_token()[2] not in EXPRESSION_END_DELIMITERS:
             
@@ -224,7 +213,7 @@ class Parser:
 
 
     def parse_term(self):
-        # <Termo> ::= NUM | NUM_DECIMAL | STRING | BOOLEAN_VERDADEIRO | BOOLEAN_FALSO | ID | PARENTESES_ABRE <Expressao> PARENTESES_FECHA
+        
         token = self.current_token()
         if not token: 
             self.add_error("Termo inesperado: fim de arquivo ou token inválido.", "N/A")
@@ -262,7 +251,7 @@ class Parser:
         return False
 
     def parse_elif_optional(self):
-        # <ElifOpcional> ::= CONFERE_MAIS <Expressao> DOIS_PONTOS <ListaComandos> <ElifOpcional> | ε
+       
         while self.current_token() and self.current_token()[2] == 'ELIF': # CONFERE_MAIS
             self.advance() # Consome ELIF
             if self.parse_expression(): # Condição do ELIF
@@ -277,7 +266,7 @@ class Parser:
         return True
 
     def parse_else_optional(self):
-        # <ElseOpcional> ::= OU_NAO DOIS_PONTOS <ListaComandos> | ε
+       
         if self.current_token() and self.current_token()[2] == 'ELSE': # OU_NAO
             self.advance() # Consome ELSE
             if self.match('DOIS_PONTOS'): # Dois pontos
@@ -288,7 +277,7 @@ class Parser:
         return True
 
     def parse_loop(self):
-        # <Loop> ::= TREINA ATÉ <Expressao> DOIS_PONTOS <ListaComandos>
+       
         if self.match('WHILE'): # TREINA ATÉ
             if self.parse_expression(): # Condição do loop
                 if self.match('DOIS_PONTOS'): # Dois pontos
@@ -300,7 +289,7 @@ class Parser:
         return False
 
     def parse_declaration_function(self):
-        # <DeclaracaoFuncao> ::= FUNC ID PARENTESES_ABRE <ListaParametrosOpcional> PARENTESES_FECHA DOIS_PONTOS <ListaComandos>
+        
         if self.match('FUNC'): # FICA GRANDE
             if self.match('ID'): # Nome da função
                 if self.match('PARENTESES_ABRE'): # Coloca anilha

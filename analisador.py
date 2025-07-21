@@ -30,8 +30,8 @@ TOKEN_SPEC = [
     ('VIRGULA', r','),
     ('DOIS_PONTOS', r':'),
 
-    # LITERAIS - ESTES DEVEM VIR ANTES DE ID E QUALQUER ERRO GERAL
-    ('STRING', r'"[^"\n]*"'), 
+    # LITERAIS - Capturam qualquer número, a validação de tamanho será no código Python
+    ('STRING', r'"[^"\n]*"'), # String bem formada (captura qualquer tamanho)
     ('NUM_DECIMAL', r'\b\d+\.\d+\b'), 
     ('NUM', r'\b\d+\b'), 
 
@@ -40,7 +40,7 @@ TOKEN_SPEC = [
 
     ('ID', r'\b[a-zA-Z_][a-zA-Z0-9_]*\b'), 
 
-    # Erros Específicos e Ignorados (Vêm depois dos tokens válidos)
+    # Erros Específicos e Ignorados
     ('ASPAS_NAO_FECHADA', r'"[^\n]*$'), 
     ('CARACTERE_SOLTO_PARENTESES', r'[\(\)]'), 
 
@@ -49,12 +49,11 @@ TOKEN_SPEC = [
     ('SKIP', r'[ \t]+'),
 
     # Erro Geral (O último da lista)
-    ('MISMATCH', r'.'), # Captura qualquer caractere restante como erro
+    ('MISMATCH', r'.'), 
 ]
 
 token_regex = re.compile('|'.join(f'(?P<{name}>{pattern})' for name, pattern in TOKEN_SPEC))
 
-# Conjunto de palavras que SÃO ID mas que poderiam ser confundidas com palavras-chave se fossem literais
 POTENTIAL_KEYWORD_MISUSE = {
     'If', 'Else', 'While', 'For', 'Def', 'Call' 
 }
@@ -63,7 +62,8 @@ POTENTIAL_KEYWORD_MISUSE = {
 def analisar_codigo(codigo: str) -> dict:
     """
     Realiza a análise léxica de um código-fonte BIRL e verifica a estrutura básica,
-    balanceamento de delimitadores e a obrigatoriedade de 'MONSTRO' para novas variáveis.
+    balanceamento de delimitadores, obrigatoriedade de 'MONSTRO' para variáveis,
+    e limites de tamanho para números e strings.
 
     Args:
         codigo (str): A string contendo o código BIRL a ser analisado.
@@ -75,7 +75,7 @@ def analisar_codigo(codigo: str) -> dict:
     """
     linhas_codigo = codigo.splitlines()
     resultado_tokens = []
-    erros_estrutura = [] # Esta lista vai conter as mensagens de erro formatadas para o topo
+    erros_estrutura = [] 
     
     delimiters_stack = [] 
     delimiter_map = {
@@ -85,11 +85,13 @@ def analisar_codigo(codigo: str) -> dict:
     found_bora_token = False 
     found_birl_token = False 
     
-    # Conjunto para rastrear variáveis que já foram declaradas com MONSTRO
     declared_variables = set()
 
     previous_meaningful_token_type = None 
     last_meaningful_token_lexema = None 
+
+    # Definir limite de string AQUI
+    MAX_STRING_LENGTH = 50 
 
     for num_linha, linha in enumerate(linhas_codigo, start=1):
         pos_coluna = 0 
@@ -104,6 +106,26 @@ def analisar_codigo(codigo: str) -> dict:
                 
                 coluna_inicial_lexema = coluna_real 
 
+                # --- VALIDAÇÃO DE TAMANHO DE NÚMERO ---
+                if tipo in ['NUM', 'NUM_DECIMAL']:
+                    digits_only_lexeme = lexema.replace('.', '')
+                    if len(digits_only_lexeme) > 9:
+                        tipo_original = tipo 
+                        tipo = 'NUM_EXCESSIVO_ERRO' 
+                        erros_estrutura.append(f"Erro Léxico na linha {num_linha}, coluna {coluna_inicial_lexema}: Número '{lexema}' excede o limite de 9 dígitos. Tipo original: {tipo_original}.")
+                # --- FIM DA VALIDAÇÃO DE TAMANHO DE NÚMERO ---
+
+                # --- NOVO: VALIDAÇÃO DE TAMANHO DE STRING ---
+                if tipo == 'STRING':
+                    # O lexema inclui as aspas, então removemos para contar o conteúdo
+                    string_content = lexema[1:-1] 
+                    if len(string_content) > MAX_STRING_LENGTH:
+                        tipo_original = tipo
+                        tipo = 'STRING_MUITO_LONGA_ERRO' # Novo tipo de erro para string longa
+                        erros_estrutura.append(f"Erro Léxico na linha {num_linha}, coluna {coluna_inicial_lexema}: String '{lexema}' excede o limite de {MAX_STRING_LENGTH} caracteres.")
+                # --- FIM DA VALIDAÇÃO DE TAMANHO DE STRING ---
+
+
                 if tipo == 'SKIP':
                     coluna_real += len(lexema) 
                     pass 
@@ -116,9 +138,7 @@ def analisar_codigo(codigo: str) -> dict:
                     last_meaningful_token_lexema = None
                     coluna_real += len(lexema)
                 elif tipo == 'MISMATCH':
-                    # NOVO: Adiciona a mensagem de erro léxico à lista de erros para o topo
                     erros_estrutura.append(f"Erro Léxico na linha {num_linha}, coluna {coluna_inicial_lexema}: Caractere não reconhecido '{lexema}'.")
-                    # Adiciona o token MISMATCH à lista principal de tokens também
                     resultado_tokens.append([num_linha, lexema, 'ERRO LÉXICO', coluna_inicial_lexema]) 
                     previous_meaningful_token_type = None 
                     last_meaningful_token_lexema = None
@@ -136,7 +156,8 @@ def analisar_codigo(codigo: str) -> dict:
                     last_meaningful_token_lexema = None
                     coluna_real += len(lexema)
                 else:
-                    resultado_tokens.append([num_linha, lexema, tipo, coluna_inicial_lexema])
+                    # Adiciona o token (cujo tipo pode ter sido alterado para erro de tamanho)
+                    resultado_tokens.append([num_linha, lexema, tipo, coluna_inicial_lexema]) 
                     
                     # --- Lógica de Validação MONSTRO ---
                     if tipo == 'ID' and previous_meaningful_token_type == 'VARIAVEL':
@@ -145,7 +166,7 @@ def analisar_codigo(codigo: str) -> dict:
                     if tipo == 'ID' and lexema not in declared_variables:
                         temp_pos = pos_coluna + len(lexema) 
                         next_is_assignment = False
-                        temp_col_for_next = coluna_real + len(lexema) # Passa para a função de erro
+                        temp_col_for_next = coluna_real + len(lexema) 
                         while temp_pos < len(linha):
                             next_match = token_regex.match(linha, temp_pos)
                             if next_match:
@@ -178,7 +199,7 @@ def analisar_codigo(codigo: str) -> dict:
 
                     # Lógica para verificação de balanceamento (usando a pilha)
                     if tipo == 'PARENTESES_ABRE': 
-                        delimiters_stack.append((lexema, num_linha, tipo, coluna_inicial_lexema)) # Armazena a coluna
+                        delimiters_stack.append((lexema, num_linha, tipo, coluna_inicial_lexema)) 
                     elif tipo == 'PARENTESES_FECHA': 
                         if not delimiters_stack:
                             erros_estrutura.append(f"Erro de Balanceamento na linha {num_linha}, coluna {coluna_inicial_lexema}: '{lexema}' encontrado sem delimitador de abertura correspondente.")
@@ -187,20 +208,25 @@ def analisar_codigo(codigo: str) -> dict:
                             last_open_lexema = last_open_delimiter_info[0]
                             last_open_line = last_open_delimiter_info[1]
                             last_open_type = last_open_delimiter_info[2]
-                            last_open_col = last_open_delimiter_info[3] # Pega a coluna de abertura
+                            last_open_col = last_open_delimiter_info[3] 
                             
                             if delimiter_map.get(lexema) != last_open_type: 
                                 erros_estrutura.append(f"Erro de Balanceamento na linha {num_linha}, coluna {coluna_inicial_lexema}: '{lexema}' encontrado, mas esperava fechamento para '{last_open_lexema}' (aberto na linha {last_open_line}, coluna {last_open_col}).")
                                         
-                    previous_meaningful_token_type = tipo 
+                    # previous_meaningful_token_type deve refletir o tipo para contextos (ID, VARIAVEL, etc.)
+                    # Se o token atual é um erro léxico de tamanho, usamos o tipo ORIGINAL para o contexto.
+                    if tipo == 'NUM_EXCESSIVO_ERRO':
+                        previous_meaningful_token_type = tipo_original # Usa o tipo original (NUM/NUM_DECIMAL)
+                    elif tipo == 'STRING_MUITO_LONGA_ERRO':
+                        previous_meaningful_token_type = tipo_original # Usa o tipo original (STRING)
+                    else:
+                        previous_meaningful_token_type = tipo 
                     last_meaningful_token_lexema = lexema
                     coluna_real += len(lexema)
 
 
                 pos_coluna += len(lexema) 
             else:
-                # Se o regex não casar, adiciona como erro léxico e avança
-                # NOVO: Adiciona o erro léxico genérico à lista de erros para o topo
                 erros_estrutura.append(f"Erro Léxico na linha {num_linha}, coluna {coluna_real}: Caractere não reconhecido '{linha[pos_coluna]}'.")
                 resultado_tokens.append([num_linha, linha[pos_coluna], 'ERRO LÉXICO', coluna_real])
                 previous_meaningful_token_type = None 
@@ -215,11 +241,11 @@ def analisar_codigo(codigo: str) -> dict:
         t for t in resultado_tokens 
         if t[2] not in [
             'SKIP', 'NEWLINE', 'COMENTARIO', 'ERRO LÉXICO', 
-            'ERRO LÉXICO - ASPAS NÃO FECHADAS', 'ERRO LÉXICO - CARACTERE INVÁLIDO'
+            'ERRO LÉXICO - ASPAS NÃO_FECHADAS', 'ERRO LÉXICO - CARACTERE_INVÁLIDO', # Corrigi nomes aqui, verificar no app.py
+            'NUM_EXCESSIVO_ERRO', 'STRING_MUITO_LONGA_ERRO' 
         ]
     ]
 
-    # Para erros de BORA/BIRL!, a linha/coluna pode ser do primeiro/último token significativo, ou N/A
     bora_line = meaningful_sequence[0][0] if meaningful_sequence and meaningful_sequence[0][2] == 'INICIO_PROGRAMA' else "N/A"
     bora_col = meaningful_sequence[0][3] if meaningful_sequence and meaningful_sequence[0][2] == 'INICIO_PROGRAMA' else "N/A"
     birl_line = meaningful_sequence[-1][0] if meaningful_sequence and meaningful_sequence[-1][2] == 'FIM_PROGRAMA' else "N/A"
@@ -234,10 +260,9 @@ def analisar_codigo(codigo: str) -> dict:
 
     # 2. Erros de Balanceamento de Delimitadores (qualquer coisa que sobrou na pilha)
     while delimiters_stack:
-        unclosed_lexema, unclosed_line, _, unclosed_col = delimiters_stack.pop() # Desempacota também a coluna de abertura
+        unclosed_lexema, unclosed_line, _, unclosed_col = delimiters_stack.pop() 
         erros_estrutura.append(f"Erro de Balanceamento na linha {unclosed_line}, coluna {unclosed_col}: Delimitador '{unclosed_lexema}' aberto e não fechado.")
 
-    # Remove duplicidades nos erros de estrutura/balanceamento
     erros_estrutura = list(dict.fromkeys(erros_estrutura))
 
     return {'tokens': resultado_tokens, 'erros_estrutura': erros_estrutura}

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BIRL - Analisador Léxico</title>
+    <title>BIRL - Analisador Léxico e Sintático</title>
     <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Roboto:wght@400;700&display=swap" rel="stylesheet">
     <style>
         /* --- ESTILOS CSS REFINADOS --- */
@@ -162,7 +162,7 @@
             white-space: nowrap;
         }
         
-        /* Estilo para o contador de linha/coluna */
+        
         #cursorPosition {
             font-size: 0.9em;
             color: var(--secondary-color);
@@ -427,7 +427,7 @@
     <header>
         <img src="{{ url_for('static', filename='birl_logo.png') }}" alt="Logo BIRL">
         <div>
-            <h1>Analisador Léxico</h1>
+            <h1>Analisador Léxico e Sintático</h1>
             <p>Sinta a força do código com a linguagem do shape!</p>
         </div>
     </header>
@@ -442,14 +442,15 @@
                     <span id="fileName">Nenhum arquivo selecionado</span>
                     <button class="custom-file-save" onclick="salvarCodigo()">Salvar Código .birl</button>
                 </div>
-                <div style="width: 100%; text-align: right; margin-top: -10px; margin-bottom: 5px;">
-                    <span id="cursorPosition">Linha 1, Coluna 1</span>
-                </div>
+                
             </div>
             
             <div class="code-editor">
                 <div class="line-numbers" id="linhas"></div>
                 <textarea id="codigo" placeholder="Digite seu código BIRL aqui..." oninput="atualizarLinhas(); atualizarPosicaoCursor();" onscroll="sincronizarScroll()"></textarea>
+            </div>
+            <div style="width: 100%; text-align: right; margin-top: -10px; margin-bottom: 5px;">
+                    <span id="cursorPosition">Linha 1, Coluna 1</span>
             </div>
             <button class="analyze-button" onclick="analisar()">ANALISAR CÓDIGO!</button>
             
@@ -457,7 +458,7 @@
         </section>
 
         <section class="output-container">
-            <h2>Saída do Analisador Léxico</h2>
+            <h2>Saída do Analisador Léxico e Sintático</h2>
             <pre id="resultado"></pre>
         </section>
     </main>
