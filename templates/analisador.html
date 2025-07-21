@@ -17,6 +17,7 @@
             --success-color: #28a745;
             --danger-color: #dc3545;
             --comment-color: #228B22; /* NOVA VARIÁVEL: VERDE ESCURO PARA COMENTÁRIOS */
+            --syntax-success-color: #007bff; /* Azul para sucesso sintático */
         }
 
         body {
@@ -264,6 +265,12 @@
         .comment-message { /* NOVA CLASSE PARA COMENTÁRIOS */
             color: var(--comment-color); /* Aplica a nova cor */
             font-style: italic; /* Opcional: para comentários ficarem em itálico */
+        }
+        
+        .syntax-success-message { /* Novo estilo para sucesso sintático */
+            color: var(--syntax-success-color);
+            font-weight: bold;
+            font-style: italic;
         }
 
 
